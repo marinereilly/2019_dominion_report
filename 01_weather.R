@@ -243,7 +243,91 @@ a<-residuals %>%
   theme_bw()
 a
 #####Wind Data#####
+weather<-readRDS("rds/weather_2010_2019.rds")
+wind<-weather %>% 
+  date_cols() %>% 
+  season() %>% 
+  select(datetime, 7:16) %>% 
+  mutate(hour=hour(datetime))
+wind<-wind %>% 
+  mutate(group_dir=case_when(
+    wind_dir<=22                   ~ 0,
+    wind_dir>22 & wind_dir<= 68    ~ 45,
+    wind_dir>68 & wind_dir<= 112   ~ 90,
+    wind_dir>112 & wind_dir<= 158  ~ 135,
+    wind_dir>158 & wind_dir<= 202  ~ 180,
+    wind_dir>202 & wind_dir<= 248  ~ 225,
+    wind_dir>248 & wind_dir<= 292  ~ 270,
+    wind_dir>292 & wind_dir<= 338  ~ 315,
+    wind_dir>338                   ~ 0
+  ))
+
+
+wind_freq<-wind %>% 
+  group_by(year) %>% 
+  count(., group_dir)
+wind_zero<-wind_freq %>% 
+  filter(group_dir==0)
+wind_zero$group_dir<-360
+wind_freq<-wind_freq %>% 
+  bind_rows(., wind_zero)
+
+wind_percent<-wind_freq %>% 
+  group_by(year) %>% 
+  summarize(all_n=sum(n)) %>% 
+  left_join(wind_freq,.) %>% 
+  mutate(percent=n/all_n*100)
+
+high_wind<-wind %>% 
+  filter(wind_spd>=18)
+high_wind_freq<-high_wind %>% 
+  group_by(year) %>% 
+  count(., group_dir)
+highwind_zero<-high_wind_freq %>% 
+  filter(group_dir==0)
+highwind_zero$group_dir=360
+high_wind_freq<-high_wind_freq %>% 
+  bind_rows(., highwind_zero)
+
+high_percent<-high_wind_freq %>% 
+  group_by(year) %>% 
+  summarize(all_n=sum(n)) %>% 
+  left_join(high_wind_freq, .) %>% 
+  mutate(percent=n/all_n*100)
+
+beaufort<-wind %>% 
+  mutate(beaufort=case_when(
+    wind_spd <= 1                      ~ 0,
+    wind_spd <= 4 & wind_spd > 1       ~ 1,
+    wind_spd <= 7 & wind_spd > 4       ~ 2,
+    wind_spd <= 12 & wind_spd > 7      ~ 3,
+    wind_spd <= 18 & wind_spd > 12     ~ 4,
+    wind_spd <= 23 & wind_spd > 18     ~ 5,
+    wind_spd <= 30 & wind_spd > 23     ~ 6,
+    wind_spd <= 38 & wind_spd > 30     ~ 7,
+    wind_spd <= 46 & wind_spd > 38     ~ 8,
+    wind_spd <= 55 & wind_spd > 46     ~ 9
+  ))
+beaufort_freq<-beaufort %>% 
+  group_by(year, beaufort) %>% 
+  count(., group_dir)
+b_zero<-beaufort_freq %>% 
+  filter(group_dir==0)
+b_zero$group_dir<-360
+b_freq<-beaufort_freq %>% 
+  full_join(.,b_zero)
+
+b_percent<-b_freq %>% 
+  group_by(year) %>% 
+  summarize(all_n=sum(n)) %>% 
+  left_join(b_freq,.) %>% 
+  mutate(percent=n/all_n*100)
+
+rm(b_zero,highwind_zero,wind_zero, beaufort_freq)
+
 #####Wind Plots####
+a<-wind %>% 
+
 #####Storms#####
 storms<-read.csv("H://0_HarrisLab/1_CURRENT PROJECT FOLDERS/Dominion/01_new_dominion/surveys/ysi_noaa_wq_weather_tides/data/nws_storms/storm_data_search_results.csv") %>% 
   select(1:6, EVENT_NARRATIVE,EPISODE_NARRATIVE)
