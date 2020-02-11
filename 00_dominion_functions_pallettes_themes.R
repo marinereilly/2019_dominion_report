@@ -55,3 +55,38 @@ pos_neg_colors<-c("Positive"="green3", "Negative"="red2")
 
 colo3<-c("Plot A"="#69B5B3", "Plot B"="#E87770", "Plot C"="blue4")
 colo4<-c("Plot A"="#d94801", "Plot B"="#2171b5", "Plot C"="#238b45")
+
+stormpal<-c("Coastal Flood"="deepskyblue3",
+            "Flash Flood"="darkblue",
+            "Flood"="skyblue2",
+            "Hail"="lightgreen",
+            "High Wind"="chartreuse3",
+            "Strong Wind"="green3",
+            "Thunderstorm Wind"="green4",
+            "Tropical Storm"="darkgreen",
+            "Tornado"="darkorange1",
+            "Blizzard"="mediumpurple3",
+            "Frost/Freeze"="lightslateblue",
+            "Winter Storm"="darkorchid4",
+            "Winter Weather"="purple3",
+            "Ice Storm"="mediumpurple1",
+            "Cold/Wind Chill"="plum3",
+            "Excessive Heat"="firebrick2",
+            "Heat"="coral2",
+            "Dense Fog"="grey54")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
