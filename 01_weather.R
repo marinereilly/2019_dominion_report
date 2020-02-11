@@ -3,6 +3,7 @@ library(dplyr)
 library(tidyr)
 library(lubridate)
 library(ggplot2)
+library(viridis)
 
 #####load weather data#####
 w2010_2018<-readRDS("rds/weather_2010_2018.rds")
@@ -325,8 +326,141 @@ b_percent<-b_freq %>%
 
 rm(b_zero,highwind_zero,wind_zero, beaufort_freq)
 
+s_freq<-wind %>% 
+  group_by(year,season) %>% 
+  count(., group_dir) 
+s_freq2<-s_freq %>% 
+  filter(group_dir==0) %>% 
+  mutate(group_dir=360) %>% 
+  rbind(s_freq,.) 
+s_percent<-s_freq2%>% 
+  group_by(year,season) %>% 
+  summarize(all_n=sum(n)) %>% 
+  left_join(s_freq2,.) %>% 
+  mutate(percent=n/all_n*100) %>% 
+  ungroup() %>% 
+  mutate(year=factor(year),
+         season=factor(season, levels = c("Winter", "Spring","Summer","Autumn"))) 
+  
+
 #####Wind Plots####
-a<-wind %>% 
+b_percent<-b_percent %>% 
+  ungroup()
+
+b_plot<-b_percent %>%
+  mutate(beaufort=factor(beaufort, 
+                         levels = c("8", "7", "6", "5", "4", "3", "2", "1", "0"))) %>% 
+  filter(year=="2019") %>% 
+  mutate(year=factor(year)) %>% 
+  filter(!group_dir==360) %>% 
+  ggplot()+
+  geom_bar(aes(x=group_dir, y=percent, fill=beaufort), color="black", stat = "identity")+
+  theme_minimal()+
+  scale_fill_viridis(discrete=TRUE, option="magma", direction = -1)+
+  ggtitle("2019 Wind Speed on the Beaufort Scale")+
+  guides(fill=guide_legend(title="Beaufort Number"))+
+  annotate(geom = "text",
+           x=c(270,270,270),
+           y=c(5,10,15),
+           label = c("5%","10%","15%"))+
+  theme(axis.line=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(), 
+        axis.title.x=element_blank(), 
+        axis.title.y=element_blank())+
+  coord_polar(theta="x", start = -0.383972)+
+  scale_x_continuous(breaks = c(0, 45, 90, 135,180,225,270,315),  
+                     labels = c("N", "NE", "E", "SE", "S", "SW", "W", "NW"), 
+                     minor_breaks = NULL,
+                     expand = c(0, 0))+ scale_y_continuous(expand = c(0, 0))#+
+  #facet_wrap(year~.)
+b_plot
+
+wind_percent<-wind_percent%>% 
+  ungroup() %>% 
+  mutate(year=factor(year))
+
+w_plot<-wind_percent  %>% 
+  filter(year!="NA") %>% 
+  ggplot()+
+  geom_line(aes(x=group_dir, y=percent, color=year), size=1)+
+  geom_line(data=subset(wind_percent, year=="2019"), 
+            aes(x=group_dir, y=percent, color=year),linetype="solid", size=2)+
+  theme_minimal()+
+  annotate(geom = "text",
+           x=c(270,270,270,270),
+           y=c(10,15,20,25),
+           label = c("10%","15%","20%","25%"))+
+  scale_color_manual(values=ypal2019)+
+  theme(axis.line=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(), 
+        axis.title.x=element_blank(), 
+        axis.title.y=element_blank())+
+  ggtitle("Winds at Cove Point Marsh")+
+  scale_x_continuous(breaks = c(0, 45, 90, 135,180,225,270,315), limits = c(0,360), 
+                     labels = c("N", "NE", "E", "SE", "S", "SW", "W", "NW"), minor_breaks = NULL)+
+  coord_polar(theta="x", start = )+
+  guides(color=guide_legend(title="Year"))
+w_plot
+
+high_percent<-high_percent%>% 
+  ungroup() %>% 
+  mutate(year=factor(year))
+
+h_plot<-high_percent  %>% 
+  filter(year!="NA") %>% 
+  ggplot()+
+  geom_line(aes(x=group_dir, y=percent, color=year), size=1)+
+  geom_line(data=subset(high_percent, year=="2019"), 
+            aes(x=group_dir, y=percent, color=year),linetype="solid", size=2)+
+  theme_minimal()+
+  annotate(geom = "text",
+           x=c(135,135,135),
+           y=c(20,30,40),
+           label = c("20%","30%","40%"))+
+  scale_color_manual(values=ypal2019)+
+  theme(axis.line=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(), 
+        axis.title.x=element_blank(), 
+        axis.title.y=element_blank())+
+  ggtitle("High Winds at Cove Point Marsh")+
+  scale_x_continuous(breaks = c(0, 45, 90, 135,180,225,270,315), limits = c(0,360), 
+                     labels = c("N", "NE", "E", "SE", "S", "SW", "W", "NW"), minor_breaks = NULL)+
+  coord_polar(theta="x", start = )+
+  guides(color=guide_legend(title="Year"))
+h_plot
+
+s_plot<-s_percent %>% 
+  filter(year!="NA") %>%
+  filter(year!="2010") %>% 
+  ggplot()+
+  geom_line(aes(x=group_dir, y=percent, color=year), size=1)+
+  geom_line(data=subset(s_percent, year=="2019"), 
+            aes(x=group_dir, y=percent, color=year),linetype="solid", size=2)+
+  theme_minimal()+
+  # geom_text(data=data.frame(x=c(270),
+  #                           y=c(30),
+  #                           label = c("30%")), 
+  #           aes(x,y,label=label), inherit.aes=FALSE)+
+  # annotate(geom = "text",
+  #          x=c(240,240,240),
+  #          y=c(20,30,40),
+  #          label = c("20%","30%","40%"))+
+  scale_color_manual(values=ypal2019)+
+  theme(axis.line=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(), 
+        axis.title.x=element_blank(), 
+        axis.title.y=element_blank())+
+  ggtitle("Seasonal Winds at Cove Point Marsh")+
+  scale_x_continuous(breaks = c(0, 45, 90, 135,180,225,270,315), limits = c(0,360), 
+                     labels = c("N", "NE", "E", "SE", "S", "SW", "W", "NW"), minor_breaks = NULL)+
+  coord_polar(theta="x", start = )+
+  guides(color=guide_legend(title="Year"))+
+  facet_grid(.~season)
+s_plot  
 
 #####Storms#####
 storms<-read.csv("H://0_HarrisLab/1_CURRENT PROJECT FOLDERS/Dominion/01_new_dominion/surveys/ysi_noaa_wq_weather_tides/data/nws_storms/storm_data_search_results.csv") %>% 
@@ -339,19 +473,67 @@ storms2<-storms %>%
   filter(EVENT_TYPE != "Excessive Heat") %>% 
   filter(EVENT_TYPE != "Dense Fog") %>% 
   filter(EVENT_TYPE != "Tornado")
+storms3<-storms %>% mutate(begin_datetime=mdy(as.character(BEGIN_DATE))) %>% 
+  mutate(year=year(begin_datetime)) %>% 
+  group_by(year) %>% 
+  count(.,EVENT_TYPE) 
+storms_4<-storms3%>% 
+  summarise(all_events=sum(n)) %>% 
+  left_join(storms3,.)
+storms_4<-storms_4 %>% 
+  mutate(EVENT_TYPE=factor(EVENT_TYPE, levels = c("Coastal Flood",
+                                                  "Flash Flood",
+                                                  "Flood",
+                                                  "Hail",
+                                                  "High Wind",
+                                                  "Strong Wind",
+                                                  "Thunderstorm Wind",
+                                                  "Tropical Storm",
+                                                  "Tornado",
+                                                  "Blizzard",
+                                                  "Frost/Freeze",
+                                                  "Winter Storm",
+                                                  "Winter Weather",
+                                                  "Ice Storm",
+                                                  "Cold/Wind Chill",
+                                                  "Excessive Heat",
+                                                  "Heat",
+                                                  "Dense Fog")))
+
+storms5<-storms %>% 
+  mutate(begin_datetime=mdy(as.character(BEGIN_DATE))) %>% 
+  mutate(year=year(begin_datetime))
+
+
+storm_plot<-storms_4 %>% 
+  ggplot(.,aes(x=factor(year), y=n, fill=EVENT_TYPE))+
+  geom_col(position="stack", color="black")+
+  theme(axis.line = element_line(color="black"),
+        panel.backgroun=element_blank())+
+  scale_y_continuous(breaks=seq(0,60,10), expand = c(0,0))+
+  scale_fill_manual(values = stormpal)+
+  ggtitle("Weather Events for Calvert County recorded by the National Weather Service")+
+  xlab("Year")+ylab("Number of Events")+labs(fill="Event Type")
+storm_plot
+
+
 # tides is in GMT so need to convert to line up times
 
 tides<-readRDS("tides.rds")
-tides<-tides %>% 
-  rename(datetime=`time (GMT)`)
+tides<-tides %>%
+  mutate(datetime=`time (GMT)`-(5*60*60))
+
 tides2<-tides %>% 
   filter()
 
 a<-ggplot()+
-  geom_line(data=tides,aes(x=datetime,
+  geom_line(data=tides,color="grey84",aes(x=datetime,
                            y= `verified water level at Solomons Island, MD (meters rel. to NAVD)`))+
-  geom_point(data=storms2, aes(x=datetime, y=0.55, 
-                              color=EVENT_TYPE))+
-  scale_y_continuous(limits = c(0.4,1))+
+  geom_point(data=filter(storms5,year==2019), aes(x=datetime, y=0.55, 
+                              color=EVENT_TYPE), size=2)+
+  geom_hline(aes(yintercept=0.19), linetype="dashed", color="blue")+
+  geom_hline(aes(yintercept=-0.26), linetype="dashed", color="blue")+
+  
+  theme_classic()+
   scale_x_datetime(limits = c(as.POSIXct("2019-01-01 00:00:00"),as.POSIXct("2019-12-31 23:59:59")))
 a
